@@ -1,32 +1,49 @@
 #!/usr/bin/python
 
 import rospy
-from sensor_msgs.msg import NavSatFix
 import serial
-from std_msgs import *
 import time
+from embedded_controller_relay.msg import NavSatReport
+from sensor_msgs.msg import NavSatFix
+from std_msgs import *
 
 # Serial Port Reference
 ser = None
 
 # Publishers for Sensor Data
+gps_native_pub = None
 gps_pub = None
 battery_pub = None
 
 
 def process_gps(data):
+    # initialize message objects
     navSatFix = NavSatFix()
+    navSatReport = NavSatReport()
+
+    # parse input data into keys for reference
     args = data.split(',')
     results = {}
     for pair in args:
         name, value = pair.split('=')
         results[name] = value
     
-    navSatFix.latitude = int(results['lat']) / 10000000.0
-    navSatFix.longitude = int(results['long']) / 10000000.0
-    navSatFix.altitude = int(results['alt']) / 1000.0
+    # interpret data and store into message
+    navSatReport.timestamp = results['time']
+    navSatReport.latitude = int(results['lat']) / 10000000.0
+    navSatReport.longitude = int(results['long']) / 10000000.0
+    navSatReport.altitude = int(results['alt']) / 1000.0
+    navSatReport.ground_speed = int(results['ground_speed']) / 1000.0
+    navSatReport.motion_heading = int(results['motion_heading']) / 100000.0
+    navSatReport.horizontal_accuracy = int(results['horizontal_accuracy']) / 1000.0
 
-    gps_pub.publish(navSatFix)
+    # copy data over to the native message type
+    navSatFix.latitude = navSatReport.latitude
+    navSatFix.longitude = navSatReport.longitude
+    navSatFix.altitude = navSatReport.altitude
+
+    gps_native_pub.publish(navSatFix)
+    gps_pub.publish(navSatReport)
 
 topic_publisher_callback = {
     'gps' : process_gps
@@ -49,7 +66,7 @@ def run():
 
 
 def main():
-    global gps_pub, ser
+    global gps_native_pub, gps_pub, ser
     rospy.init_node('embedded_controller_relay')
 
     while (ser is None):
@@ -61,7 +78,8 @@ def main():
     rospy.loginfo('Connected to teensy.')
 
     # Initilize Publishers
-    gps_pub = rospy.Publisher('gps', NavSatFix, queue_size=5)
+    gps_native_pub = rospy.Publisher('gps_native', NavSatFix, queue_size=5)
+    gps_pub = rospy.Publisher('gps', NavSatReport, queue_size=5)
     
     # Function to continullay relay data between the Jetson and Teensy
     run()
