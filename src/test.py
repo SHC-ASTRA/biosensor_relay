@@ -3,7 +3,7 @@
 import rospy
 import serial
 import time
-from embedded_controller_relay.msg import NavSatReport
+from embedded_controller_relay.msg import NavSatReport, BatteryReport
 from sensor_msgs.msg import NavSatFix
 from std_msgs import *
 
@@ -14,6 +14,7 @@ ser = None
 gps_native_pub = None
 gps_pub = None
 battery_pub = None
+status_pub = None
 
 
 def process_gps(data):
@@ -45,8 +46,31 @@ def process_gps(data):
     gps_native_pub.publish(navSatFix)
     gps_pub.publish(navSatReport)
 
+
+def process_battery(data):
+    # initialize message objects
+    batteryReport = BatteryReport()
+
+    # parse input data into keys for reference
+    args = data.split(',')
+    results = {}
+    for pair in args:
+        name, value = pair.split('=')
+        results[name] = value
+
+    batteryReport.batteryVoltage = float(results['v'])
+    batteryReport.batteryCharge = float(results['c'])
+
+    battery_pub.publish(batteryReport)
+
+def process_status(data):
+    status_pub.publish(str(data))
+
+
 topic_publisher_callback = {
-    'gps' : process_gps
+    'gps' : process_gps,
+    'battery' : process_battery,
+    'status' : process_status
 }
 def process_message(message):
     args = message.split(";")
@@ -55,6 +79,7 @@ def process_message(message):
 
     topic_publisher_callback[topic](data)
 
+
 def run():
     rate = rospy.Rate(100)
     while not rospy.is_shutdown():
@@ -62,11 +87,12 @@ def run():
             message = ser.read_until('\n')
             process_message(message)
         
+        #ser.write("set_motors;1.0,0.5\n")
         rate.sleep()
 
 
 def main():
-    global gps_native_pub, gps_pub, ser
+    global gps_native_pub, gps_pub, ser, status_pub, battery_pub
     rospy.init_node('embedded_controller_relay')
 
     while (ser is None):
@@ -80,6 +106,10 @@ def main():
     # Initilize Publishers
     gps_native_pub = rospy.Publisher('gps_native', NavSatFix, queue_size=5)
     gps_pub = rospy.Publisher('gps', NavSatReport, queue_size=5)
+
+    status_pub = rospy.Publisher('status', msg.String, queue_size=5)
+
+    battery_pub = rospy.Publisher('battery', BatteryReport, queue_size=1)
     
     # Function to continullay relay data between the Jetson and Teensy
     run()
