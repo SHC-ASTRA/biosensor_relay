@@ -3,6 +3,7 @@
 import rospy
 import serial
 import time
+from control_input_aggregator.msg import ControlInput
 from embedded_controller_relay.msg import NavSatReport, BatteryReport
 from sensor_msgs.msg import NavSatFix
 from std_msgs import *
@@ -15,6 +16,9 @@ gps_native_pub = None
 gps_pub = None
 battery_pub = None
 status_pub = None
+
+# Subscribers for Control Data
+control_input_sub = None
 
 
 def process_gps(data):
@@ -70,7 +74,8 @@ def process_status(data):
 topic_publisher_callback = {
     'gps' : process_gps,
     'battery' : process_battery,
-    'status' : process_status
+    'status' : process_status,
+    'response': process_status
 }
 def process_message(message):
     args = message.split(";")
@@ -78,6 +83,10 @@ def process_message(message):
     data = args[1]
 
     topic_publisher_callback[topic](data)
+
+
+def handle_control_input(controlInput):
+    ser.write("set_motors;" + str(controlInput.heading[0]) + "," + str(controlInput.heading[1]) + "," + str(controlInput.speed_clamp) + "\n")
 
 
 def run():
@@ -92,7 +101,7 @@ def run():
 
 
 def main():
-    global gps_native_pub, gps_pub, ser, status_pub, battery_pub
+    global gps_native_pub, gps_pub, ser, status_pub, battery_pub, control_input_sub
     rospy.init_node('embedded_controller_relay')
 
     while (ser is None):
@@ -111,6 +120,9 @@ def main():
 
     battery_pub = rospy.Publisher('battery', BatteryReport, queue_size=1)
     
+    # Initialize Subscribers
+    control_input_sub = rospy.Subscriber("/control_output", ControlInput, handle_control_input)
+
     # Function to continullay relay data between the Jetson and Teensy
     run()
 
