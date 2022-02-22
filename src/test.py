@@ -6,6 +6,7 @@ import time
 from control_input_aggregator.msg import ControlInput
 from embedded_controller_relay.msg import NavSatReport, BatteryReport
 from sensor_msgs.msg import NavSatFix
+from geometry_msgs.msg import Twist
 from std_msgs import *
 
 # Serial Port Reference
@@ -19,6 +20,7 @@ status_pub = None
 
 # Subscribers for Control Data
 control_input_sub = None
+cmd_vel_sub = None
 
 
 def process_gps(data):
@@ -88,13 +90,15 @@ def process_message(message):
 def handle_control_input(controlInput):
     ser.write("set_motors;" + str(controlInput.heading[0]) + "," + str(controlInput.heading[1]) + "," + str(controlInput.speed_clamp) + "\n")
 
+def handle_vel_cmd(vel_cmd):
+    ser.write("set_motors;" + str(vel_cmd.linear.x) + ',' + str(-vel_cmd.angular.z) + ',' + "1\n")
 
 def run():
     rate = rospy.Rate(100)
     while not rospy.is_shutdown():
         while ser.in_waiting > 0:
             message = ser.read_until('\n')
-            process_message(message)
+            #process_message(message)
         
         #ser.write("set_motors;1.0,0.5\n")
         rate.sleep()
@@ -113,15 +117,17 @@ def main():
     rospy.loginfo('Connected to teensy.')
 
     # Initilize Publishers
-    gps_native_pub = rospy.Publisher('gps_native', NavSatFix, queue_size=5)
-    gps_pub = rospy.Publisher('gps', NavSatReport, queue_size=5)
+    #gps_native_pub = rospy.Publisher('gps_native', NavSatFix, queue_size=5)
+    #gps_pub = rospy.Publisher('gps', NavSatReport, queue_size=5)
 
-    status_pub = rospy.Publisher('status', msg.String, queue_size=5)
+    #status_pub = rospy.Publisher('status', msg.String, queue_size=5)
 
-    battery_pub = rospy.Publisher('battery', BatteryReport, queue_size=1)
+    #battery_pub = rospy.Publisher('battery', BatteryReport, queue_size=1)
     
     # Initialize Subscribers
-    control_input_sub = rospy.Subscriber("/control_output", ControlInput, handle_control_input)
+    #control_input_sub = rospy.Subscriber("/control_output", ControlInput, handle_control_input)
+    cmd_vel_sub = rospy.Subscriber("/planner/cmd_vel", Twist, handle_vel_cmd)
+
 
     # Function to continullay relay data between the Jetson and Teensy
     run()

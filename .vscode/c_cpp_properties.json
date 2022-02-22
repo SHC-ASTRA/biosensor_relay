@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/astra/Documents/Software/catkin_ws/devel/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/embedded_controller_relay/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/gscam/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/imu_bno055/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/imu_tools/imu_complementary_filter/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/imu_tools/imu_filter_madgwick/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/prototype_tf2/include/**",
+        "/home/astra/Documents/Software/catkin_ws/src/zed-ros-wrapper/zed-ros-interfaces/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}
