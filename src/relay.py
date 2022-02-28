@@ -19,6 +19,8 @@ class EmbeddedControllerRelay:
             port = rospy.get_param('~teensy_serial_port', '/dev/ttyACM0')
             try:
                 self.ser = serial.Serial(port)
+            except KeyboardInterrupt:
+                exit()
             except:
                 rospy.loginfo("Unable to locate Teensy (@{0}), please ensure communications.".format(port))
                 time.sleep(3)
