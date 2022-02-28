@@ -98,11 +98,16 @@ class EmbeddedControllerRelay:
         self.status_pub.publish(str(data))
 
     def process_message(self, message):
-        args = message.split(";")
-        topic = args[0]
-        data = args[1]
+        try:
+            args = message.split(";")
+            topic = args[0]
+            data = args[1]
 
-        self.topic_publisher_callback[topic](data)
+            self.topic_publisher_callback[topic](data)
+        except:
+            pass
+
+        
 
     def run(self):
         rate = rospy.Rate(100)
