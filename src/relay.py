@@ -33,7 +33,7 @@ class EmbeddedControllerRelay:
 
         # Initialize Subscriber Nodes for Control Data
         self.cmd_vel_sub = rospy.Subscriber("/planner/cmd_vel", Twist, self.process_vel_cmd)
-	self.control_input_sub = rospy.Subscriber("/control_input", ControlInput, self.process_control_input)
+        self.control_input_sub = rospy.Subscriber("/control_input", ControlInput, self.process_control_input)
 
         self.topic_publisher_callback = {
             'gps' : self.process_gps,
@@ -77,7 +77,6 @@ class EmbeddedControllerRelay:
         self.gps_native_pub.publish(navSatFix)
         self.gps_pub.publish(navSatReport)
 
-
     def process_battery(self, data):
         # initialize message objects
         batteryReport = BatteryReport()
@@ -106,8 +105,6 @@ class EmbeddedControllerRelay:
             self.topic_publisher_callback[topic](data)
         except:
             pass
-
-        
 
     def run(self):
         rate = rospy.Rate(100)
