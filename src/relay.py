@@ -37,6 +37,7 @@ class EmbeddedControllerRelay:
         # Initialize Subscriber Nodes for Control Data
         self.cmd_vel_sub = rospy.Subscriber("/planner/cmd_vel", Twist, self.process_vel_cmd)
         self.control_input_sub = rospy.Subscriber("/control_input", ControlInput, self.process_control_input)
+        self.autonomous_input_sub = rospy.Subscriber("/autonomous_control", ControlInput, self.process_autonomous_control)
 
         # Signal Service
         self.signal_srv = rospy.Service("/signal_operating_mode", SignalColor, self.signal_color)
@@ -53,6 +54,24 @@ class EmbeddedControllerRelay:
 
     def process_control_input(self, input):
         self.ser.write("set_motors;" + str(input.heading[0]) + "," + str(-input.heading[1]) + "," + str(input.speed_clamp) + "\n")
+
+    def process_autonomous_control(self, input):
+        distance = input.heading[0]
+        turn = input.heading[1]
+
+        left = 0
+        right = 0
+
+        if abs(turn) < .1:
+            left = 0.5
+            right = 0.5
+        else:
+            if turn < 0:
+                right = .75
+            else:
+                left = .75
+
+        self.ser.write("set_motors;" + str(left) + ',' + str(right) + ',1.0\n')
 
     def process_gps(self, data):
         # initialize message objects
