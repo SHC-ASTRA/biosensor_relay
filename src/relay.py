@@ -119,6 +119,8 @@ class EmbeddedControllerRelay:
             self.ser.write("signal_autonomous;\n")
         elif srv.signal == "goal":
             self.ser.write("signal_goal;\n")
+        elif srv.signal == "idle":
+            self.ser.write("signal_idle;\n")
 
         return SignalColorResponse(True)
 
