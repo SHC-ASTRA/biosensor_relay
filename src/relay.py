@@ -5,6 +5,7 @@ import serial
 import time
 from control_input_aggregator.msg import ControlInput
 from embedded_controller_relay.msg import NavSatReport, BatteryReport
+from embedded_controller_relay.srv import SignalColor, SignalColorResponse
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
 from std_msgs import *
@@ -37,6 +38,9 @@ class EmbeddedControllerRelay:
         self.cmd_vel_sub = rospy.Subscriber("/planner/cmd_vel", Twist, self.process_vel_cmd)
         self.control_input_sub = rospy.Subscriber("/control_input", ControlInput, self.process_control_input)
 
+        # Signal Service
+        self.signal_srv = rospy.Service("/signal_operating_mode", SignalColor, self.signal_color)
+
         self.topic_publisher_callback = {
             'gps' : self.process_gps,
             'battery' : self.process_battery,
@@ -64,12 +68,12 @@ class EmbeddedControllerRelay:
         
         # interpret data and store into message
         navSatReport.timestamp = results['time']
-        navSatReport.latitude = int(results['lat']) / 10000000.0
-        navSatReport.longitude = int(results['long']) / 10000000.0
-        navSatReport.altitude = int(results['alt']) / 1000.0
-        navSatReport.ground_speed = int(results['ground_speed']) / 1000.0
-        navSatReport.motion_heading = int(results['motion_heading']) / 100000.0
-        navSatReport.horizontal_accuracy = int(results['horizontal_accuracy']) / 1000.0
+        navSatReport.latitude = int(results['lat'])
+        navSatReport.longitude = int(results['long'])
+        navSatReport.altitude = int(results['alt'])
+        navSatReport.ground_speed = int(results['ground_speed'])
+        navSatReport.motion_heading = int(results['motion_heading'])
+        navSatReport.horizontal_accuracy = int(results['horizontal_accuracy'])
 
         # copy data over to the native message type
         navSatFix.latitude = navSatReport.latitude
@@ -107,6 +111,16 @@ class EmbeddedControllerRelay:
             self.topic_publisher_callback[topic](data)
         except:
             pass
+
+    def signal_color(self, srv):
+        if srv.signal == "teleoperation":
+            self.ser.write("signal_teleop;\n")
+        elif srv.signal == "autonomous":
+            self.ser.write("signal_autonomous;\n")
+        elif srv.signal == "goal":
+            self.ser.write("signal_goal;\n")
+
+        return SignalColorResponse(True)
 
     def run(self):
         rate = rospy.Rate(100)
