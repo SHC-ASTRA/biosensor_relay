@@ -13,11 +13,12 @@ from std_msgs import *
 class EmbeddedControllerRelay:
     def __init__(self):
         rospy.init_node('embedded_controller_relay')
+        rospy.loginfo("Initializing embedded controller relay.")
 
         # Initialize serial port and connect to teensy microcontroller
         self.ser = None
         while (self.ser is None):
-            port = rospy.get_param('~teensy_serial_port', '/dev/ttyACM0')
+            port = rospy.get_param('teensy_serial_port', '/dev/ttyACM0')
             try:
                 self.ser = serial.Serial(port)
             except KeyboardInterrupt:
@@ -38,6 +39,18 @@ class EmbeddedControllerRelay:
         self.cmd_vel_sub = rospy.Subscriber("/planner/cmd_vel", Twist, self.process_vel_cmd)
         self.control_input_sub = rospy.Subscriber("/control_input", ControlInput, self.process_control_input)
         self.autonomous_input_sub = rospy.Subscriber("/autonomous_control", ControlInput, self.process_autonomous_control)
+        self.control_input_timer = 0
+        self.control_input_timeout = .1
+
+        # Initalize Subscribers for new control system
+        namespace = rospy.get_namespace()
+        self.motor_cmd_subs = {
+            "front_right": rospy.Subscriber(namespace+"motor/front_right/power", msg.Float32, self.construct_motor_power_handler("front_right")),
+            "front_left": rospy.Subscriber(namespace+"motor/front_left/power", msg.Float32, self.construct_motor_power_handler("front_left")),
+            "back_right": rospy.Subscriber(namespace+"motor/back_right/power", msg.Float32, self.construct_motor_power_handler("back_right")),
+            "back_left": rospy.Subscriber(namespace+"motor/back_left/power", msg.Float32, self.construct_motor_power_handler("back_left")),
+            "max_power": rospy.Subscriber(namespace+"motor/max_power", msg.Float32, self.construct_motor_power_handler("max_power"))
+        }
 
         # Signal Service
         self.signal_srv = rospy.Service("/signal_operating_mode", SignalColor, self.signal_color)
@@ -49,13 +62,24 @@ class EmbeddedControllerRelay:
             'response': self.process_status
         }
 
+    def construct_motor_power_handler(self, motor_name):
+        def process_motor_power_cmd(power_cmd):
+            self.ser.write("set_motor;" + motor_name + "," + str(power_cmd.data) + "\n")
+
+        return process_motor_power_cmd
+
     def process_vel_cmd(self, vel_cmd):
-        self.ser.write("set_motors;" + str(-vel_cmd.linear.x) + ',' + str(-vel_cmd.angular.z) + ',' + "1\n")
+        speed = vel_cmd.angular.z
+        direction = vel_cmd.linear.x
+        print(direction, speed)
+        #self.ser.write("set_motors;" + str(-vel_cmd.linear.x) + ',' + str(-vel_cmd.angular.z) + ',' + "0.5\n")
 
     def process_control_input(self, input):
+        self.control_input_timer = time.time()
         self.ser.write("set_motors;" + str(input.heading[0]) + "," + str(-input.heading[1]) + "," + str(input.speed_clamp) + "\n")
 
     def process_autonomous_control(self, input):
+        self.control_input_timer = time.time()
         distance = input.heading[0]
         turn = input.heading[1]
 
@@ -87,8 +111,8 @@ class EmbeddedControllerRelay:
         
         # interpret data and store into message
         navSatReport.timestamp = results['time']
-        navSatReport.latitude = int(results['lat'])
-        navSatReport.longitude = int(results['long'])
+        navSatReport.latitude = float(results['lat']) / 10000000.0
+        navSatReport.longitude = float(results['long']) / 10000000.0
         navSatReport.altitude = int(results['alt'])
         navSatReport.ground_speed = int(results['ground_speed'])
         navSatReport.motion_heading = int(results['motion_heading'])
@@ -122,14 +146,11 @@ class EmbeddedControllerRelay:
         self.status_pub.publish(str(data))
 
     def process_message(self, message):
-        try:
-            args = message.split(";")
-            topic = args[0]
-            data = args[1]
+        args = message.split(";")
+        topic = args[0]
+        data = args[1]
 
-            self.topic_publisher_callback[topic](data)
-        except:
-            pass
+        self.topic_publisher_callback[topic](data)
 
     def signal_color(self, srv):
         if srv.signal == "teleoperation":
@@ -150,6 +171,10 @@ class EmbeddedControllerRelay:
                 message = self.ser.read_until('\n')
                 print(message)
                 self.process_message(message)
+            
+            if time.time() - self.control_input_timer > self.control_input_timeout:
+                self.ser.write("set_motors;0.0,0.0,0.0\n")
+                self.control_input_timer = time.time()
             
             rate.sleep()
 
