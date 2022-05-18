@@ -59,7 +59,8 @@ class EmbeddedControllerRelay:
             'gps' : self.process_gps,
             'battery' : self.process_battery,
             'status' : self.process_status,
-            'response': self.process_status
+            'response': self.process_status,
+            'packet_info' : self.process_status
         }
 
     def construct_motor_power_handler(self, motor_name):
