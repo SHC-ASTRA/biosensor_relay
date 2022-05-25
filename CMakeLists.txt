@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(embedded_controller_relay)
+project(bio_relay)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -10,7 +10,6 @@ project(embedded_controller_relay)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  sensor_msgs
   std_msgs
   message_generation
 )
@@ -51,8 +50,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  NavSatReport.msg
-  BatteryReport.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -60,7 +57,7 @@ add_message_files(
 ## Generate services in the 'srv' folder
  add_service_files(
    FILES
-   SignalColor.srv
+   BioCommand.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -107,7 +104,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-  LIBRARIES embedded_controller_relay
+  LIBRARIES bio_relay
   CATKIN_DEPENDS roscpp rospy message_runtime
 #  DEPENDS system_lib
 )
@@ -125,7 +122,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/embedded_controller_relay.cpp
+#   src/${PROJECT_NAME}/bio_relay.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -136,7 +133,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/embedded_controller_relay_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/bio_relay_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,7 +160,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  src/test.py
+  src/relay.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -200,7 +197,7 @@ catkin_install_python(PROGRAMS
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_embedded_controller_relay.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_bio_relay.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

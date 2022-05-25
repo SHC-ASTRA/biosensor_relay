@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>embedded_controller_relay</name>
+  <name>bio_relay</name>
   <version>0.0.0</version>
-  <description>The embedded_controller_relay package</description>
+  <description>The bio_relay package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
